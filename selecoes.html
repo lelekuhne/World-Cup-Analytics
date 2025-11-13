@@ -51,7 +51,49 @@ function maiorGoleadaDoTime(team) {
     el.innerText = 'Nenhuma vitória encontrada';
 }
 function teamStats(team){ if(!team || team==='all'){ document.getElementById('team-stats').innerHTML='<div class="small">Escolha uma seleção para estatísticas</div>'; return; } let games=0,wins=0,draws=0,losses=0,forg=0,against=0; DATA.forEach(r=>{ const a=r["Time A"], b=r["Time B"]; const pa=Number(r["Placar A"]||0), pb=Number(r["Placar B"]||0); if(a===team || b===team){ games++; const gf = (a===team)?pa:pb; const ga=(a===team)?pb:pa; forg+=gf; against+=ga; if(gf>ga) wins++; else if(gf===ga) draws++; else losses++; } }); document.getElementById('team-stats').innerHTML = `<div class="small">Jogos: ${games}</div><div class="small">Vitórias: ${wins} — Empates: ${draws} — Derrotas: ${losses}</div><div class="small">Gols: ${forg} marcados · ${against} sofridos</div>`; const table = DATA.filter(r=> r["Time A"]===team || r["Time B"]===team ).slice(0,200); let html = '<table style="width:100%;border-collapse:collapse;color:#dbeafe"><thead><tr><th>Ano</th><th>Time A</th><th>Placar</th><th>Time B</th><th>Estadio</th></tr></thead><tbody>'; table.forEach(r=> html += `<tr><td class="small">${r["Ano"]}</td><td class="small">${r["Time A"]}</td><td class="small">${r["Placar A"]} x ${r["Placar B"]}</td><td class="small">${r["Time B"]}</td><td class="small">${r["Estadio"]}</td></tr>`); html += '</tbody></table>'; document.getElementById('table-selecao').innerHTML = html; }
-function renderTeamPage(){ const team = sel.value; plotTopWins(DATA); maiorGoleadaDoTime(team); teamStats(team); } plotTopWins(DATA);
+  function maiorGoleadaSofrida(team) {
+  if (!team || team === 'all') {
+    const el = document.getElementById('suffered');
+    if(el) el.innerText = 'Selecione uma seleção';
+    return;
+  }
+  // partidas onde a seleção participou e perdeu
+  const perdas = DATA.filter(r => {
+    const pa = Number(r["Placar A"]||0), pb = Number(r["Placar B"]||0);
+    if (r["Time A"] === team && pa < pb) return true;
+    if (r["Time B"] === team && pb < pa) return true;
+    return false;
+  });
+  if (perdas.length === 0) {
+    const el = document.getElementById('suffered');
+    if(el) el.innerText = 'Nenhuma derrota encontrada';
+    return;
+  }
+  // escolher a maior derrota pela diferença de gols (adversário_score - team_score)
+  let best = null;
+  let maxDiff = -1;
+  perdas.forEach(r => {
+    const pa = Number(r["Placar A"]||0), pb = Number(r["Placar B"]||0);
+    let diff = 0;
+    if (r["Time A"] === team) diff = pb - pa; // perdeu como Time A
+    else diff = pa - pb; // perdeu como Time B
+    if (diff > maxDiff) { maxDiff = diff; best = r; }
+  });
+  // Formatar saída: mostrar vencedor (adversário) primeiro
+  const el = document.getElementById('suffered');
+  if (!el) return;
+  if (best) {
+    const pa = Number(best["Placar A"]||0), pb = Number(best["Placar B"]||0);
+    const winner = pa > pb ? best["Time A"] : best["Time B"];
+    const winnerScore = Math.max(pa, pb);
+    const loser = pa > pb ? best["Time B"] : best["Time A"];
+    const loserScore = Math.min(pa, pb);
+    el.innerText = `${winner} ${winnerScore} × ${loserScore} ${loser} — ${best["Ano"]}`;
+  } else {
+    el.innerText = 'Nenhuma derrota encontrada';
+  }
+}
+function renderTeamPage(){ const team = sel.value; plotTopWins(DATA); maiorGoleadaDoTime(team); teamStats(team); } plotTopWins(DATA); maiorGoleadaSofrida(team);
 </script>
 
 </body></html>
