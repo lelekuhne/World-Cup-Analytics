@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análises Especiais - Copa do Mundo</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="header-container">
+      <a href="index_new.html" class="logo">Copa do Mundo Analytics</a>
+      <nav>
+        <a href="index_new.html">🏠 Início</a>
+        <a href="selecoes_new.html">🇧🇷 Seleções</a>
+        <a href="estadios_new.html">🏟️ Estádios</a>
+        <a href="gols_new.html">⚽ Gols</a>
+        <a href="recordes_new.html">⭐ Recordes</a>
+        <a href="analises_new.html" class="active">🎯 Análises</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="container">
+      <!-- SECTION HEADER -->
+      <div class="section-header">
+        <h1>🎯 Análises Especiais</h1>
+        <p>Curiosidades históricas e análises aprofundadas sobre a Copa do Mundo</p>
+      </div>
+
+      <!-- SPECIAL CARDS -->
+      <div class="grid">
+        <div class="card">
+          <h3>1️⃣ Primeira Copa do Mundo</h3>
+          <p><strong>País-sede:</strong> Uruguai (1930)</p>
+          <p><strong>Campeão:</strong> Uruguai</p>
+          <p><strong>Curiosidade:</strong> Primeira edição do torneio, com apenas 13 seleções participantes.</p>
+        </div>
+
+        <div class="card">
+          <h3>🏆 Seleções com Mais Títulos</h3>
+          <div id="chart-gols" class="chart-container" style="min-height: 300px;"></div>
+        </div>
+
+        <div class="card">
+          <h3>🌍 Evolução dos Gols por Jogo</h3>
+          <div id="chart-evolucao" class="chart-container" style="min-height: 300px;"></div>
+        </div>
+
+        <div class="card">
+          <h3>🏟️ Vantagem do País-Sede</h3>
+          <div id="chart-sede" class="chart-container" style="min-height: 300px;"></div>
+        </div>
+      </div>
+
+      <!-- FINALS SECTION -->
+      <div class="card full">
+        <h3>🏆 Análise de Finais</h3>
+        <div class="grid" style="margin-top: 1.5rem;">
+          <div>
+            <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">Títulos por Seleção</h4>
+            <div id="chart-finals-champions" class="chart-container" style="min-height: 300px;"></div>
+          </div>
+          <div>
+            <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">Histórico de Finais</h4>
+            <div class="table-wrap" id="table-finals"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>⚽ Copa do Mundo Analytics - Análise Histórica Completa</p>
+    <p class="small">Dados atualizados até a Copa do Mundo 2022</p>
+  </footer>
+
+  <script src="dados.js"></script>
+  <script>
+    function plotChampionsByTitles() {
+      const finals = DATA.filter(r => r["Fase"] === "Final");
+      const champions = {};
+
+      finals.forEach(r => {
+        const pa = Number(r["Placar A"] || 0);
+        const pb = Number(r["Placar B"] || 0);
+        let winner = null;
+
+        if (pa > pb) {
+          winner = r["Time A"];
+        } else if (pb > pa) {
+          winner = r["Time B"];
+        } else {
+          if (r["Observacao"] && r["Observacao"].includes("venceu")) {
+            if (r["Observacao"].includes(r["Time A"])) winner = r["Time A"];
+            else if (r["Observacao"].includes(r["Time B"])) winner = r["Time B"];
+          }
+        }
+
+        if (winner) {
+          champions[winner] = (champions[winner] || 0) + 1;
+        }
+      });
+
+      const arr = Object.entries(champions).map(([k, v]) => ({ team: k, wins: v })).sort((a, b) => b.wins - a.wins);
+
+      Plotly.newPlot('chart-finals-champions', [{
+        x: arr.map(a => a.team),
+        y: arr.map(a => a.wins),
+        type: 'bar',
+        marker: { color: '#fbbf24' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Seleção', tickangle: -45, gridcolor: '#334155' },
+        yaxis: { title: 'Títulos', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function tableFinals() {
+      const finals = DATA.filter(r => r["Fase"] === "Final").sort((a, b) => b["Ano"] - a["Ano"]);
+      let html = '<table><thead><tr><th>Ano</th><th>Placar</th><th>Vencedor</th></tr></thead><tbody>';
+
+      finals.forEach(r => {
+        const pa = Number(r["Placar A"] || 0);
+        const pb = Number(r["Placar B"] || 0);
+        let winner = 'Indefinido';
+
+        if (pa > pb) {
+          winner = r["Time A"];
+        } else if (pb > pa) {
+          winner = r["Time B"];
+        } else {
+          if (r["Observacao"] && r["Observacao"].includes(r["Time A"])) winner = r["Time A"];
+          else if (r["Observacao"] && r["Observacao"].includes(r["Time B"])) winner = r["Time B"];
+        }
+
+        html += `<tr><td>${r["Ano"]}</td><td><strong>${r["Time A"]} ${r["Placar A"]} x ${r["Placar B"]} ${r["Time B"]}</strong></td><td>${winner}</td></tr>`;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('table-finals').innerHTML = html;
+    }
+
+    function plotEvolutionGoals() {
+      const byYear = {};
+      DATA.forEach(r => {
+        const y = r["Ano"];
+        const g = Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0);
+        byYear[y] = (byYear[y] || { goals: 0, games: 0 });
+        byYear[y].goals += g;
+        byYear[y].games += 1;
+      });
+
+      const xs = Object.keys(byYear).sort((a, b) => a - b);
+      const avgGoals = xs.map(x => (byYear[x].games ? (byYear[x].goals / byYear[x].games) : 0).toFixed(2));
+
+      Plotly.newPlot('chart-evolucao', [{
+        x: xs,
+        y: avgGoals,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#34d399', width: 3 },
+        marker: { size: 8, color: '#10b981' },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(16, 185, 129, 0.2)'
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Ano', gridcolor: '#334155' },
+        yaxis: { title: 'Média de Gols por Jogo', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function plotHostAdvantage() {
+      const hostData = {};
+      DATA.forEach(r => {
+        const y = r["Ano"];
+        const pais = r["Pais"];
+        const pa = Number(r["Placar A"] || 0);
+        const pb = Number(r["Placar B"] || 0);
+
+        if (!hostData[y]) {
+          hostData[y] = { host_wins: 0, total_games: 0 };
+        }
+        hostData[y].total_games++;
+      });
+
+      const xs = Object.keys(hostData).sort((a, b) => a - b);
+      const hostWinPercentage = xs.map(x => {
+        const total = hostData[x].total_games;
+        return total > 0 ? ((hostData[x].host_wins / total) * 100).toFixed(1) : 0;
+      });
+
+      Plotly.newPlot('chart-sede', [{
+        x: xs,
+        y: hostWinPercentage,
+        type: 'bar',
+        marker: { color: '#3b82f6' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Ano', gridcolor: '#334155' },
+        yaxis: { title: 'Vantagem do País-Sede (%)', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    plotChampionsByTitles();
+    tableFinals();
+    plotEvolutionGoals();
+    plotHostAdvantage();
+  </script>
+</body>
+</html>

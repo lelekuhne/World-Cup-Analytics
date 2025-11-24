@@ -1,0 +1,23 @@
+
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Gols — Dashboard Copas</title><script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<style>:root{--bg:#0b1220;--card:#0f1724;--accent:#1f6feb;--muted:#94a3b8}body{margin:0;font-family:Inter,Segoe UI,Helvetica,Arial;background:var(--bg);color:#e6eef8}header{background:linear-gradient(90deg, rgba(31,111,235,0.12), rgba(20,20,30,0.04));padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}.container{max-width:1200px;margin:14px auto;padding:0 16px}.nav{display:flex;gap:12px;align-items:center}.nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:8px}.nav a:hover{background:rgba(255,255,255,0.02);color:white}.title{font-size:18px;font-weight:700;margin-right:12px;color:white}.card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6);min-width:140px}.kpi{font-size:18px;font-weight:700;color:#fff}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.full{grid-column:1/-1}.table-wrap{max-height:360px;overflow:auto;background:var(--card);padding:8px;border-radius:8px}.small{font-size:12px;color:var(--muted)}@media(max-width:900px){.grid{grid-template-columns:1fr}}</style></head><body>
+<header><div class="container nav"><div class="title">Dashboard — Copas do Mundo</div><nav style="display:flex;gap:6px"><a href="index.html">🏠 Início</a><a href="selecoes.html">🇧🇷 Seleções</a><a href="estadios.html">🏟️ Estádios</a><a href="gols.html">⚽ Gols</a><a href="recordes.html">⭐ Recordes</a><a href="analises.html">Análises Especiais</a></nav></div></header>
+
+<main class="container"><div><h2 style="margin:4px 0;color:white">Análises de Gols</h2><div class="small">Médias, distribuição por fase e maiores partidas</div></div>
+<div class="grid" style="margin-top:12px">
+  <div id="chart-goals-per-edition" class="card" style="min-height:360px"></div>
+  <div id="chart-top-matches" class="card" style="min-height:360px"></div>
+  <div class="card full table-wrap" id="table-gols"></div>
+</div></main>
+<footer style="color:var(--muted);text-align:center;padding:18px 0">Gerado automaticamente · Dados embutidos · Teste local ou GitHub Pages</footer>
+
+
+<script src="dados.js"></script>
+<script>
+</script>
+
+<script>
+function plotGoalsPerEdition(){ const byYear={}; DATA.forEach(r=>{ const y=r["Ano"]; const g=Number(r["Placar A"]||0)+Number(r["Placar B"]||0); byYear[y]=(byYear[y]||{goals:0,games:0}); byYear[y].goals += g; byYear[y].games +=1; }); const xs=Object.keys(byYear).sort((a,b)=>a-b); const ys=xs.map(x=> (byYear[x].games? (byYear[x].goals/byYear[x].games):0).toFixed(2) ); Plotly.newPlot('chart-goals-per-edition',[{x:xs,y:ys,type:'bar',name:'Média de Gols'},{x:xs,y:ys,type:'scatter',mode:'lines',name:'Tendência',line:{color:'red',dash:'dash'}}],{title:{text:'Média de gols por jogo por edição (com tendência)'},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{color:'#e6eef8'}}); }
+function topMatchesByGoals(){ const arr = DATA.map(r=>({...r,total: (Number(r["Placar A"]||0)+Number(r["Placar B"]||0))})).sort((a,b)=>b.total-a.total).slice(0,15); Plotly.newPlot('chart-top-matches',[{x:arr.map(a=>a.total),y:arr.map(a=> (a["Time A"]+' '+a["Placar A"]+' x '+a["Placar B"]+' '+a["Time B"]+' ('+a["Ano"]+')') ),type:'bar',orientation:'h'}],{title:{text:'Partidas com mais gols'},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{color:'#e6eef8'}}); const rows = arr; let html = '<table style="width:100%;border-collapse:collapse;color:#dbeafe"><thead><tr><th>Ano</th><th>Placar</th><th>Estadio</th><th>Total</th></tr></thead><tbody>'; rows.forEach(r=> html += `<tr><td class="small">${r["Ano"]}</td><td class="small">${r["Time A"]} ${r["Placar A"]} x ${r["Placar B"]} ${r["Time B"]}</td><td class="small">${r["Estadio"]}</td><td class="small">${r.total}</td></tr>`); html += '</tbody></table>'; document.getElementById('table-gols').innerHTML = html; } plotGoalsPerEdition(); topMatchesByGoals();
+</script>
+</body></html>

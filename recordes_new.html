@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recordes - Copa do Mundo</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="header-container">
+      <a href="index_new.html" class="logo">Copa do Mundo Analytics</a>
+      <nav>
+        <a href="index_new.html">🏠 Início</a>
+        <a href="selecoes_new.html">🇧🇷 Seleções</a>
+        <a href="estadios_new.html">🏟️ Estádios</a>
+        <a href="gols_new.html">⚽ Gols</a>
+        <a href="recordes_new.html" class="active">⭐ Recordes</a>
+        <a href="analises_new.html">🎯 Análises</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="container">
+      <!-- SECTION HEADER -->
+      <div class="section-header">
+        <h1>⭐ Recordes e Curiosidades</h1>
+        <p>Maiores goleadas, viradas e momentos históricos da Copa do Mundo</p>
+      </div>
+
+      <!-- CHARTS GRID -->
+      <div class="grid">
+        <div class="card">
+          <h3>🏆 Maiores Goleadas</h3>
+          <div id="top-goleadas" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+        <div class="card">
+          <h3>Gols por Fase</h3>
+          <div class="chart-container" id="gols-por-phase"></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="card full">
+        <h3>📊 Partidas com 7+ Gols</h3>
+        <div class="table-wrap" id="table-recordes"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>⚽ Copa do Mundo Analytics - Análise Histórica Completa</p>
+    <p class="small">Dados atualizados até a Copa do Mundo 2022</p>
+  </footer>
+
+  <script src="dados.js"></script>
+  <script>
+    function topGoleadas() {
+      const arr = DATA.map(r => ({ r: r, d: Math.abs(Number(r["Placar A"] || 0) - Number(r["Placar B"] || 0)) }))
+        .sort((a, b) => b.d - a.d)
+        .slice(0, 15);
+
+      let html = '<ol style="padding-left: 1.5rem;">';
+      arr.forEach((x, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•';
+        html += `<li style="margin: 0.75rem 0; font-size: 0.95rem;"><strong>${medal} ${x.r["Time A"]} ${x.r["Placar A"]} x ${x.r["Placar B"]} ${x.r["Time B"]}</strong> (${x.r["Ano"]}) - Diferença: ${x.d}</li>`;
+      });
+      html += '</ol>';
+      document.getElementById('top-goleadas').innerHTML = html;
+    }
+
+    function golsPorPhase() {
+      const byP = {};
+      DATA.forEach(r => byP[r["Fase"]] = (byP[r["Fase"]] || 0) + Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0));
+      const phaseOrder = ["Final", "Decisao do Terceiro Lugar", "Semifinais", "Quartas-de-final", "Oitavas-de-final", "Segunda Fase", "Fase de Grupos", "Primeira Fase", "Grupo 1", "Grupo 2", "Grupo 3", "Grupo 4", "Grupo 5", "Grupo 6", "Grupo A", "Grupo B", "Grupo C", "Grupo D", "Grupo E", "Grupo F", "Grupo G", "Grupo H"];
+      const arr = Object.entries(byP).sort((a, b) => phaseOrder.indexOf(a[0]) - phaseOrder.indexOf(b[0]));
+
+      Plotly.newPlot('gols-por-phase', [{
+        x: arr.map(a => a[0]),
+        y: arr.map(a => a[1]),
+        type: 'bar',
+        marker: { color: '#f59e0b' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Fase', tickangle: -45, gridcolor: '#334155' },
+        yaxis: { title: 'Total de Gols', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function tableRecordes() {
+      const rows = DATA.filter(r => (Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0)) >= 7).slice(0, 200);
+      let html = '<table><thead><tr><th>Ano</th><th>Fase</th><th>Placar</th><th>Estádio</th><th>Total</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        const total = Number(r["Placar A"]) + Number(r["Placar B"]);
+        html += `<tr><td>${r["Ano"]}</td><td>${r["Fase"]}</td><td><strong>${r["Time A"]} ${r["Placar A"]} x ${r["Placar B"]} ${r["Time B"]}</strong></td><td>${r["Estadio"]}</td><td><strong>${total}</strong></td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('table-recordes').innerHTML = html;
+    }
+
+    topGoleadas();
+    golsPorPhase();
+    tableRecordes();
+  </script>
+</body>
+</html>

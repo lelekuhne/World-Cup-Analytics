@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copa do Mundo - Análises Históricas</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="header-container">
+      <a href="index_new.html" class="logo">Copa do Mundo Analytics</a>
+      <nav>
+        <a href="index_new.html" class="active">🏠 Início</a>
+        <a href="selecoes_new.html">🇧🇷 Seleções</a>
+        <a href="estadios_new.html">🏟️ Estádios</a>
+        <a href="gols_new.html">⚽ Gols</a>
+        <a href="recordes_new.html">⭐ Recordes</a>
+        <a href="analises_new.html">🎯 Análises</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="container">
+      <!-- SECTION HEADER -->
+      <div class="section-header">
+        <h1>📊 Resumo das Copas do Mundo</h1>
+        <p>Análise histórica completa de todas as edições da Copa do Mundo FIFA</p>
+      </div>
+
+      <!-- FILTER SECTION -->
+      <div class="filter-section">
+        <div class="filter-group">
+          <label for="year-filter">Filtrar por Ano</label>
+          <select id="year-filter">
+            <option value="all">Todas as Copas</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-section">
+        <div class="kpi-card">
+          <div class="kpi-label">Total de Copas</div>
+          <div class="kpi-value" id="kpi-cups">–</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total de Jogos</div>
+          <div class="kpi-value" id="kpi-games">–</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total de Gols</div>
+          <div class="kpi-value" id="kpi-goals">–</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Seleções</div>
+          <div class="kpi-value" id="kpi-teams">–</div>
+        </div>
+      </div>
+
+      <!-- CHARTS GRID -->
+      <div class="grid full">
+        <div class="card">
+          <h3>Gols por Edição</h3>
+          <div class="chart-container" id="chart-goals-time"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Média de Gols por Jogo</h3>
+          <div class="chart-container" id="chart-avggoals"></div>
+        </div>
+        <div class="card">
+          <h3>Jogos por Fase</h3>
+          <div class="chart-container" id="chart-games-by-phase"></div>
+        </div>
+      </div>
+
+      <!-- HIGHLIGHT CARD -->
+      <div class="card full">
+        <h3>🏆 Maior Goleada Geral</h3>
+        <div style="font-size: 1.5rem; color: var(--accent-gold); margin-top: 1rem;" id="maior-goleada">–</div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="card full">
+        <h3>📋 Últimos Resultados</h3>
+        <div class="table-wrap" id="table-results"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>⚽ Copa do Mundo Analytics - Análise Histórica Completa</p>
+    <p class="small">Dados atualizados até a Copa do Mundo 2022</p>
+  </footer>
+
+  <script src="dados.js"></script>
+  <script>
+    function updateIndexKPIs(filtered = DATA) {
+      const cups = unique(filtered.map(d => d["Ano"])).length;
+      const games = filtered.length;
+      const goals = sum(filtered.map(d => (Number(d["Placar A"] || 0) + Number(d["Placar B"] || 0))));
+      const teams = unique(filtered.flatMap(d => [d["Time A"], d["Time B"]])).length;
+
+      document.getElementById('kpi-cups').innerText = cups;
+      document.getElementById('kpi-games').innerText = games;
+      document.getElementById('kpi-goals').innerText = goals;
+      document.getElementById('kpi-teams').innerText = teams;
+    }
+
+    function plotGoalsOverTime(filtered = DATA) {
+      const byYear = {};
+      filtered.forEach(r => {
+        const y = r["Ano"];
+        const g = Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0);
+        byYear[y] = (byYear[y] || 0) + g;
+      });
+      const xs = Object.keys(byYear).sort((a, b) => a - b);
+      const ys = xs.map(x => byYear[x]);
+
+      Plotly.newPlot('chart-goals-time', [{
+        x: xs,
+        y: ys,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#fbbf24', width: 3 },
+        marker: { size: 8, color: '#3b82f6' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Ano', gridcolor: '#334155' },
+        yaxis: { title: 'Gols Totais', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function plotAvgGoals(filtered = DATA) {
+      const stats = {};
+      filtered.forEach(r => {
+        const y = r["Ano"];
+        const g = Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0);
+        stats[y] = stats[y] || { goals: 0, games: 0 };
+        stats[y].goals += g;
+        stats[y].games += 1;
+      });
+      const xs = Object.keys(stats).sort((a, b) => a - b);
+      const ys = xs.map(x => (stats[x].games ? (stats[x].goals / stats[x].games) : 0).toFixed(2));
+
+      Plotly.newPlot('chart-avggoals', [{
+        x: xs,
+        y: ys,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#34d399', width: 3 },
+        marker: { size: 8, color: '#10b981' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Ano', gridcolor: '#334155' },
+        yaxis: { title: 'Média de Gols', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function plotGamesByPhase(filtered = DATA) {
+      const byP = {};
+      filtered.forEach(r => byP[r["Fase"]] = (byP[r["Fase"]] || 0) + 1);
+      const phaseOrder = ["Final", "Decisao do Terceiro Lugar", "Semifinais", "Quartas-de-final", "Oitavas-de-final", "Segunda Fase", "Fase de Grupos", "Primeira Fase", "Grupo 1", "Grupo 2", "Grupo 3", "Grupo 4", "Grupo 5", "Grupo 6", "Grupo A", "Grupo B", "Grupo C", "Grupo D", "Grupo E", "Grupo F", "Grupo G", "Grupo H"];
+      const arr = Object.entries(byP).sort((a, b) => phaseOrder.indexOf(a[0]) - phaseOrder.indexOf(b[0]));
+      const xs = arr.map(a => a[0]);
+      const ys = arr.map(a => a[1]);
+
+      Plotly.newPlot('chart-games-by-phase', [{
+        x: xs,
+        y: ys,
+        type: 'bar',
+        marker: { color: '#3b82f6' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Fase', tickangle: -45, gridcolor: '#334155' },
+        yaxis: { title: 'Quantidade de Jogos', gridcolor: '#334155' },
+        hovermode: 'x unified'
+      });
+    }
+
+    function maiorGoleadaGeral(filtered = DATA) {
+      let best = null;
+      let diff = 0;
+      filtered.forEach(r => {
+        const a = Number(r["Placar A"] || 0);
+        const b = Number(r["Placar B"] || 0);
+        const d = Math.abs(a - b);
+        if (d > diff) {
+          diff = d;
+          best = r;
+        }
+      });
+      const el = document.getElementById('maior-goleada');
+      if (best) el.innerText = `${best["Time A"]} ${best["Placar A"]} × ${best["Placar B"]} ${best["Time B"]} (${best["Ano"]})`;
+      else el.innerText = '–';
+    }
+
+    function tableResults(filtered = DATA) {
+      const rows = filtered.slice(-10).reverse();
+      let html = '<table><thead><tr><th>Ano</th><th>Fase</th><th>Placar</th><th>Estádio</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        html += `<tr><td>${r["Ano"]}</td><td>${r["Fase"]}</td><td>${r["Time A"]} ${r["Placar A"]} x ${r["Placar B"]} ${r["Time B"]}</td><td>${r["Estadio"]}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('table-results').innerHTML = html;
+    }
+
+    // Initialize with all data
+    updateIndexKPIs();
+    plotGoalsOverTime();
+    plotAvgGoals();
+    plotGamesByPhase();
+    maiorGoleadaGeral();
+    tableResults();
+
+    // Year filter
+    const yearFilter = document.getElementById('year-filter');
+    const years = unique(DATA.map(d => d["Ano"])).sort((a, b) => a - b);
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.text = y;
+      yearFilter.appendChild(opt);
+    });
+
+    yearFilter.addEventListener('change', () => {
+      const selectedYear = yearFilter.value;
+      const filtered = (selectedYear === 'all') ? DATA : DATA.filter(d => d["Ano"] === Number(selectedYear));
+
+      updateIndexKPIs(filtered);
+      plotGoalsOverTime(filtered);
+      plotAvgGoals(filtered);
+      plotGamesByPhase(filtered);
+      maiorGoleadaGeral(filtered);
+      tableResults(filtered);
+    });
+  </script>
+</body>
+</html>

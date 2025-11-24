@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estádios - Copa do Mundo</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="header-container">
+      <a href="index_new.html" class="logo">Copa do Mundo Analytics</a>
+      <nav>
+        <a href="index_new.html">🏠 Início</a>
+        <a href="selecoes_new.html">🇧🇷 Seleções</a>
+        <a href="estadios_new.html" class="active">🏟️ Estádios</a>
+        <a href="gols_new.html">⚽ Gols</a>
+        <a href="recordes_new.html">⭐ Recordes</a>
+        <a href="analises_new.html">🎯 Análises</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="container">
+      <!-- SECTION HEADER -->
+      <div class="section-header">
+        <h1>🏟️ Estádios e Cidades</h1>
+        <p>Análise dos principais estádios e cidades que sediaram a Copa do Mundo</p>
+      </div>
+
+      <!-- FILTER SECTION -->
+      <div class="filter-section">
+        <div class="filter-group">
+          <label for="stadium-country-filter">País-Sede</label>
+          <select id="stadium-country-filter">
+            <option value="all">Todos os Países</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CHARTS GRID -->
+      <div class="grid">
+        <div class="card">
+          <h3>Top Estádios por Gols</h3>
+          <div class="chart-container" id="chart-top-stadia"></div>
+        </div>
+        <div class="card">
+          <h3>Cidades com Mais Jogos</h3>
+          <div class="chart-container" id="chart-top-cities"></div>
+        </div>
+      </div>
+
+      <div class="grid full">
+        <div class="card">
+          <h3>Gols por Edição (País-Sede)</h3>
+          <div class="chart-container" id="chart-goals-by-host"></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="card full">
+        <h3>📋 Detalhes dos Jogos</h3>
+        <div class="table-wrap" id="table-stadia"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>⚽ Copa do Mundo Analytics - Análise Histórica Completa</p>
+    <p class="small">Dados atualizados até a Copa do Mundo 2022</p>
+  </footer>
+
+  <script src="dados.js"></script>
+  <script>
+    function plotGoalsByHost(filtered) {
+      const byYear = {};
+      filtered.forEach(r => {
+        const y = r["Ano"];
+        const g = Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0);
+        byYear[y] = (byYear[y] || { goals: 0, games: 0 });
+        byYear[y].goals += g;
+        byYear[y].games += 1;
+      });
+      const xs = Object.keys(byYear).sort((a, b) => a - b);
+      const ys = xs.map(x => byYear[x].goals);
+
+      Plotly.newPlot('chart-goals-by-host', [{
+        x: xs,
+        y: ys,
+        type: 'bar',
+        name: 'Gols Totais',
+        marker: { color: '#3b82f6' }
+      }, {
+        x: xs,
+        y: xs.map(x => (byYear[x].games ? (byYear[x].goals / byYear[x].games) : 0).toFixed(2)),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Média de Gols',
+        yaxis: 'y2',
+        line: { color: '#ef4444', width: 2 },
+        marker: { size: 8 }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Ano', gridcolor: '#334155' },
+        yaxis: { title: 'Gols Totais', gridcolor: '#334155' },
+        yaxis2: { title: 'Média de Gols', overlaying: 'y', side: 'right' },
+        hovermode: 'x unified',
+        showlegend: true
+      });
+    }
+
+    function renderStadiaPage() {
+      const country = document.getElementById('stadium-country-filter').value;
+      const filtered = (country === 'all') ? DATA : DATA.filter(d => d["Pais"] === country);
+
+      // Top Stadia
+      const bySt = {};
+      filtered.forEach(r => {
+        const s = r["Estadio"] || 'SEM_ESTADIO';
+        const g = Number(r["Placar A"] || 0) + Number(r["Placar B"] || 0);
+        bySt[s] = (bySt[s] || 0) + g;
+      });
+      const arr = Object.entries(bySt).map(([k, v]) => ({ stadium: k, goals: v })).sort((a, b) => b.goals - a.goals).slice(0, 12);
+
+      Plotly.newPlot('chart-top-stadia', [{
+        x: arr.map(a => a.goals),
+        y: arr.map(a => a.stadium),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#10b981' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Total de Gols', gridcolor: '#334155' },
+        hovermode: 'y unified'
+      });
+
+      // Top Cities
+      const byC = {};
+      filtered.forEach(r => byC[r["Cidade"]] = (byC[r["Cidade"]] || 0) + 1);
+      const carr = Object.entries(byC).map(([k, v]) => ({ city: k, games: v })).sort((a, b) => b.games - a.games).slice(0, 12);
+
+      Plotly.newPlot('chart-top-cities', [{
+        x: carr.map(a => a.games),
+        y: carr.map(a => a.city),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#f59e0b' }
+      }], {
+        title: { text: '', font: { size: 16 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#f1f5f9' },
+        xaxis: { title: 'Quantidade de Jogos', gridcolor: '#334155' },
+        hovermode: 'y unified'
+      });
+
+      // Goals by Host
+      plotGoalsByHost(filtered);
+
+      // Table
+      const rows = filtered.slice(0, 200);
+      let html = '<table><thead><tr><th>Ano</th><th>Estádio</th><th>Cidade</th><th>Time A</th><th>Placar</th><th>Time B</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        html += `<tr><td>${r["Ano"]}</td><td>${r["Estadio"]}</td><td>${r["Cidade"]}</td><td>${r["Time A"]}</td><td><strong>${r["Placar A"]} x ${r["Placar B"]}</strong></td><td>${r["Time B"]}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('table-stadia').innerHTML = html;
+    }
+
+    // Initialize
+    const countries = unique(DATA.map(d => d["Pais"]));
+    const fsel = document.getElementById('stadium-country-filter');
+    countries.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c;
+      o.text = c;
+      fsel.appendChild(o);
+    });
+
+    fsel.addEventListener('change', () => renderStadiaPage());
+    renderStadiaPage();
+  </script>
+</body>
+</html>
