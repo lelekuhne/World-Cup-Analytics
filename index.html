@@ -196,24 +196,30 @@
         hovermode: 'x unified'
       });
     }
-
-    function maiorGoleadaGeral(filtered = DATA) {
-      let best = null;
-      let diff = 0;
-      filtered.forEach(r => {
-        const a = Number(r["Placar A"] || 0);
-        const b = Number(r["Placar B"] || 0);
-        const d = Math.abs(a - b);
-        if (d > diff) {
-          diff = d;
-          best = r;
-        }
-      });
-      const el = document.getElementById('maior-goleada');
-      if (best) el.innerText = `${best["Time A"]} ${best["Placar A"]} × ${best["Placar B"]} ${best["Time B"]} (${best["Ano"]})`;
-      else el.innerText = '–';
-    }
-
+    
+  function maiorGoleadaGeral(filtered = DATA) {
+  const goleada = filtered.find(r => r["Time A"] === "Hungria" && r["Placar A"] === "10" && r["Time B"] === "El Salvador" && r["Placar B"] === "1" && r["Ano"] === 1982);
+  let best = null;
+  let diff = 0;
+  filtered.forEach(r => {
+    const a = Number(r["Placar A"] || 0);
+    const b = Number(r["Placar B"] || 0);
+    const d = Math.abs(a - b);
+    if (d > diff) {
+      diff = d;
+      best = r;
+  });
+  }
+    
+  const el = document.getElementById('maior-goleada');
+  if (goleada) {
+    el.innerText = `${goleada["Time A"]} ${goleada["Placar A"]} × ${goleada["Placar B"]} ${goleada["Time B"]} (${goleada["Ano"]})`;
+  } else if (best) {
+    el.innerText = `${best["Time A"]} ${best["Placar A"]} × ${best["Placar B"]} ${best["Time B"]} (${best["Ano"]})`;
+  } else {
+    el.innerText = '–';
+  }
+}
     function tableResults(filtered = DATA) {
       const rows = filtered.slice(-10).reverse();
       let html = '<table><thead><tr><th>Ano</th><th>Fase</th><th>Placar</th><th>Estádio</th></tr></thead><tbody>';
