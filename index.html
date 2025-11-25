@@ -197,8 +197,11 @@
       });
     }
     
-  function maiorGoleadaGeral(filtered = DATA) {
+ function maiorGoleadaGeral(filtered = DATA) {
+  // A goleada de 10 a 1 (Hungria x El Salvador, 1982) é a maior.
+  // Vamos forçar a exibição, pois a função de busca pode estar retornando outra partida com a mesma diferença.
   const goleada = filtered.find(r => r["Time A"] === "Hungria" && r["Placar A"] === "10" && r["Time B"] === "El Salvador" && r["Placar B"] === "1" && r["Ano"] === 1982);
+  
   let best = null;
   let diff = 0;
   filtered.forEach(r => {
@@ -208,10 +211,12 @@
     if (d > diff) {
       diff = d;
       best = r;
+    }
   });
-  }
-    
+  
   const el = document.getElementById('maior-goleada');
+  
+  // Se a goleada de 10 a 1 for encontrada, exibe ela. Caso contrário, exibe a maior encontrada pela função.
   if (goleada) {
     el.innerText = `${goleada["Time A"]} ${goleada["Placar A"]} × ${goleada["Placar B"]} ${goleada["Time B"]} (${goleada["Ano"]})`;
   } else if (best) {
@@ -220,6 +225,7 @@
     el.innerText = '–';
   }
 }
+
     function tableResults(filtered = DATA) {
       const rows = filtered.slice(-10).reverse();
       let html = '<table><thead><tr><th>Ano</th><th>Fase</th><th>Placar</th><th>Estádio</th></tr></thead><tbody>';
